@@ -75,7 +75,9 @@
     "@commitlint/cli": "^8.1.0",
     "@commitlint/config-conventional": "^8.1.0",
     "@commitlint/prompt": "~8.1.0",
+    "@parcel/logger": "^2.0.0-alpha.2",
     "babel-jest": "^24.9.0",
+    "babel-types": "^6.26.0",
     "commitizen": "^4.0.3",
     "cz-conventional-changelog": "~3.0.2",
     "eslint": "^6.4.0",
@@ -86,7 +88,8 @@
     "jest": "^24.9.0",
     "jest-config": "^24.9.0",
     "lint-staged": "^9.2.5",
-    "prettier": "^1.18.2",
-    "parcel-bundler": "^1.12.4"
+    "node-libs-browser": "^2.2.1",
+    "parcel-bundler": "^1.12.4",
+    "prettier": "^1.18.2"
   }
 }
