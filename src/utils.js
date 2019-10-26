@@ -1,5 +1,4 @@
 function setAttr(element, key, value) {
-  console.log(element, key, value)
   if (key === 'className') {
     element.setAttribute('class', value)
   } else if (key === 'style') {
