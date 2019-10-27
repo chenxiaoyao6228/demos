@@ -1,62 +1,39 @@
 import React from './react'
 
-import ReactDOM, { Component } from './react-dom'
+import ReactDOM from './react-dom'
 
 let root = document.querySelector('#root')
 
-// let element = React.createElement(
-//   'ul',
-//   { className: 'list' },
-//   React.createElement(
-//     'li',
-//     { className: 'item', style: 'background: red' },
-//     'item'
-//   ),
-//   React.createElement(
-//     'li',
-//     { className: 'item', style: { color: 'blue' } },
-//     'item'
-//   ),
-//   React.createElement(
-//     'li',
-//     {
-//       className: 'item',
-//       onClick: function() {
-//         window.alert('触发点击事件')
-//       }
-//     },
-//     'item'
-//   )
-// )
-// let element = (
-//   <ul className="item">
-//     <li className="item" style="background: red">
-//       item1
-//     </li>
-//     <li className="item" style={{ backGround: 'red' }}>
-//       item2
-//     </li>
-//     <li
-//       className="item"
-//       onClick={() => {
-//         alert('触发点击事件')
-//       }}
-//     >
-//       item3
-//     </li>
-//   </ul>
-// )
-
-// ReactDom.render(element, root)
-
-// function Welcome(props) {
-//   return <h1>Hello, {props.name}</h1>
-// }
+class Counter extends React.Component {
+  constructor(props) {
+    super(props)
+    this.state = { num: 0 }
+  }
+  componentWillUpdate() {
+    console.log('update')
+  }
+  componentWillMount() {
+    console.log('mount')
+  }
+  handleClick() {
+    this.setState({
+      num: this.state.num + 1
+    })
+  }
+  render() {
+    return (
+      <div>
+        <h1>number: {this.state.num}</h1>
+        <button onClick={this.handleClick.bind(this)}>add</button>
+      </div>
+    )
+  }
+}
 
 function App() {
   return (
-    // <div>hello world</div>
     <div>
+      <Counter></Counter>
       <Welcome name="York" />
       <Welcome name="Allen" />
       <Welcome name="Iverson" />
@@ -64,7 +41,7 @@ function App() {
   )
 }
 
-class Welcome extends ReactDOM.Component {
+class Welcome extends React.Component {
   constructor(props) {
     super(props)
   }

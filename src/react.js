@@ -1,3 +1,4 @@
+import { Component } from './react-dom'
 function createElement(tagName, attrs, ...children) {
   return {
     tagName,
@@ -7,7 +8,8 @@ function createElement(tagName, attrs, ...children) {
 }
 
 let React = {
-  createElement
+  createElement,
+  Component
 }
 
 export default React

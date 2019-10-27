@@ -36,7 +36,7 @@ function _render(vnode) {
   return element
 }
 
-class Component {
+export class Component {
   constructor(props = {}) {
     this.props = props
     this.state = {}
@@ -94,8 +94,7 @@ function renderComponent(component) {
 }
 
 let ReactDOM = {
-  render,
-  Component
+  render
 }
 
 export default ReactDOM
