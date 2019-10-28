@@ -31,14 +31,7 @@ class Counter extends React.Component {
 }
 
 function App() {
-  return (
-    <div>
-      <Counter></Counter>
-      <Welcome name="York" />
-      <Welcome name="Allen" />
-      <Welcome name="Iverson" />
-    </div>
-  )
+  return <Counter></Counter>
 }
 
 class Welcome extends React.Component {
@@ -50,4 +43,5 @@ class Welcome extends React.Component {
   }
 }
 
-ReactDOM.render(<App />, root)
+// ReactDOM.render(<App />, root)
+ReactDOM.render(React.createElement(App, {}, ''), root)

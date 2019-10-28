@@ -10,8 +10,7 @@
   "plugins": [
     "@babel/plugin-transform-runtime",
     "@babel/plugin-transform-modules-commonjs",
-    [
-      "@babel/plugin-proposal-decorators",
+    ["@babel/plugin-proposal-decorators",
       {
         "legacy": true
       }
