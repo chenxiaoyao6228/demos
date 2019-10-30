@@ -49,7 +49,6 @@ function _render(vnode, container) {
 }
 
 function render(vnode, container, dom) {
-  debugger
   return diff(dom, vnode, container)
 }
 

@@ -188,16 +188,17 @@ export function renderComponent(component) {
   }
 
   base = diffNode(component.base, renderer)
-
+  // 保留本次的节点, 便于下次进行比较
   component.base = base
   base._component = component
 
+  // 第一次渲染执行didMount, 第二次渲染执行didUpdate
   if (component.base) {
     if (component.componentDidUpdate) component.componentDidUpdate()
   } else if (component.componentDidMount) {
     component.componentDidMount()
   }
-
+  // 
   component.base = base
   base._component = component
 }
