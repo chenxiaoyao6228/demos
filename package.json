@@ -16,5 +16,11 @@
   "bugs": {
     "url": "https://github.com/chenxiaoyao6228/demo-code-for-blog/issues"
   },
-  "homepage": "https://github.com/chenxiaoyao6228/demo-code-for-blog#readme"
+  "homepage": "https://github.com/chenxiaoyao6228/demo-code-for-blog#readme",
+  "devDependencies": {
+    "@babel/core": "^7.7.2",
+    "@babel/generator": "^7.7.2",
+    "@babel/traverse": "^7.7.2",
+    "babylon": "^6.18.0"
+  }
 }
