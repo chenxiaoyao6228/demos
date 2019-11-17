@@ -1,0 +1,20 @@
+{
+  "name": "simple-webpack",
+  "version": "1.0.0",
+  "description": "simple bundler",
+  "main": "index.js",
+  "bin": {
+    "simple-webpack": "./bin/index.js"
+  },
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenxiaoyao6228/demo-code-for-blog.git"
+  },
+  "author": "ChenXiaoyao <chenxiaoyao6228@163.com> (http://www.chenxiaoyao.cn/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/chenxiaoyao6228/demo-code-for-blog/issues"
+  },
+  "homepage": "https://github.com/chenxiaoyao6228/demo-code-for-blog#readme"
+}
