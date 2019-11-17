@@ -1,2 +1,3 @@
-const logger = require('log');
-logger('aaa');
+const logA = require('a');
+
+logA();
