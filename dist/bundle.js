@@ -89,6 +89,8 @@
     (function(module, exports, __webpack_require__) {
        const logA = __webpack_require__("src/a.js");
 
+__webpack_require__("src/index.less");
+
 logA();
     }),
   
@@ -110,6 +112,14 @@ module.exports = logA;
 }
 
 module.exports = logB;
+    }),
+  
+    "src/index.less":
+    (function(module, exports, __webpack_require__) {
+       let style = document.createElement('style');
+style.innerHTML = "body {\n  background: red;\n}\n"; //处理换行
+
+document.head.appendChild(style);
     }),
   
 });

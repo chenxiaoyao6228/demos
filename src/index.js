@@ -1,3 +1,3 @@
-const logA = require('a');
-
+const logA = require('./a');
+require('./index.less');
 logA();

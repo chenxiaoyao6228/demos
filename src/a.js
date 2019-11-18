@@ -1,4 +1,4 @@
-const logB = require('b');
+const logB = require('./b');
 
 function logA() {
 	console.log('logA');
