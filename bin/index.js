@@ -8,4 +8,7 @@ let Compiler = require('../lib/Compiler.js');
 
 let compiler = new Compiler(config);
 
+// 调用开始执行的钩子函数
+compiler.hooks.entryOption.call();
+
 compiler.run();

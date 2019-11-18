@@ -1,5 +1,18 @@
 const path = require('path');
 
+class P {
+	apply(compiler) {
+		console.log('start');
+		// 订阅emit事件
+		compiler.hooks.emit.tap('afterPlugin', function() {
+			console.log('afterPlugin');
+		});
+		compiler.hooks.emit.tap('emit', function() {
+			console.log('emit');
+		});
+	}
+}
+
 module.exports = {
 	entry: './src/index.js',
 	output: {
@@ -16,5 +29,6 @@ module.exports = {
 				]
 			}
 		]
-	}
+	},
+	plugins: [new P()]
 };
