@@ -1,0 +1,12 @@
+{
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "name": "monorepo-demo",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/chenxiaoyao6228/demo-code-for-blog.git",
+  "author": "ChenXiaoyao <chenxiaoyao6228@163.com> (http://www.chenxiaoyao.cn/)",
+  "license": "MIT"
+}
