@@ -1,2 +1,3 @@
- const common = require('@york/common');
+ 
+const common = require('@york/common');
 common();
