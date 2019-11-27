@@ -31936,13 +31936,554 @@ if ("development" === 'production') {
 } else {
   module.exports = require('./cjs/react-dom.development.js');
 }
-},{"./cjs/react-dom.development.js":"node_modules/react-dom/cjs/react-dom.development.js"}],"router/index.js":[function(require,module,exports) {
+},{"./cjs/react-dom.development.js":"node_modules/react-dom/cjs/react-dom.development.js"}],"node_modules/path-to-regexp/dist.es2015/index.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.Switch = exports.Route = exports.Link = exports.HashRouter = void 0;
+exports.parse = parse;
+exports.compile = compile;
+exports.tokensToFunction = tokensToFunction;
+exports.match = match;
+exports.regexpToFunction = regexpToFunction;
+exports.tokensToRegexp = tokensToRegexp;
+exports.pathToRegexp = pathToRegexp;
+
+/**
+ * Tokenize input string.
+ */
+function lexer(str) {
+  var tokens = [];
+  var i = 0;
+
+  while (i < str.length) {
+    var char = str[i];
+
+    if (char === "*" || char === "+" || char === "?") {
+      tokens.push({
+        type: "MODIFIER",
+        index: i,
+        value: str[i++]
+      });
+      continue;
+    }
+
+    if (char === "\\") {
+      tokens.push({
+        type: "ESCAPED_CHAR",
+        index: i++,
+        value: str[i++]
+      });
+      continue;
+    }
+
+    if (char === "{") {
+      tokens.push({
+        type: "OPEN",
+        index: i,
+        value: str[i++]
+      });
+      continue;
+    }
+
+    if (char === "}") {
+      tokens.push({
+        type: "CLOSE",
+        index: i,
+        value: str[i++]
+      });
+      continue;
+    }
+
+    if (char === ":") {
+      var name = "";
+      var j = i + 1;
+
+      while (j < str.length) {
+        var code = str.charCodeAt(j);
+
+        if ( // `0-9`
+        code >= 48 && code <= 57 || // `A-Z`
+        code >= 65 && code <= 90 || // `a-z`
+        code >= 97 && code <= 122 || // `_`
+        code === 95) {
+          name += str[j++];
+          continue;
+        }
+
+        break;
+      }
+
+      if (!name) throw new TypeError("Missing parameter name at " + i);
+      tokens.push({
+        type: "NAME",
+        index: i,
+        value: name
+      });
+      i = j;
+      continue;
+    }
+
+    if (char === "(") {
+      var count = 1;
+      var pattern = "";
+      var j = i + 1;
+
+      if (str[j] === "?") {
+        throw new TypeError("Pattern cannot start with \"?\" at " + j);
+      }
+
+      while (j < str.length) {
+        if (str[j] === "\\") {
+          pattern += str[j++] + str[j++];
+          continue;
+        }
+
+        if (str[j] === ")") {
+          count--;
+
+          if (count === 0) {
+            j++;
+            break;
+          }
+        } else if (str[j] === "(") {
+          count++;
+
+          if (str[j + 1] !== "?") {
+            throw new TypeError("Capturing groups are not allowed at " + j);
+          }
+        }
+
+        pattern += str[j++];
+      }
+
+      if (count) throw new TypeError("Unbalanced pattern at " + i);
+      if (!pattern) throw new TypeError("Missing pattern at " + i);
+      tokens.push({
+        type: "PATTERN",
+        index: i,
+        value: pattern
+      });
+      i = j;
+      continue;
+    }
+
+    tokens.push({
+      type: "CHAR",
+      index: i,
+      value: str[i++]
+    });
+  }
+
+  tokens.push({
+    type: "END",
+    index: i,
+    value: ""
+  });
+  return tokens;
+}
+/**
+ * Parse a string for the raw tokens.
+ */
+
+
+function parse(str, options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  var tokens = lexer(str);
+  var _a = options.prefixes,
+      prefixes = _a === void 0 ? "./" : _a;
+  var defaultPattern = "[^" + escapeString(options.delimiter || "/#?") + "]+?";
+  var result = [];
+  var key = 0;
+  var i = 0;
+  var path = "";
+
+  var tryConsume = function (type) {
+    if (i < tokens.length && tokens[i].type === type) return tokens[i++].value;
+  };
+
+  var mustConsume = function (type) {
+    var value = tryConsume(type);
+    if (value !== undefined) return value;
+    var _a = tokens[i],
+        nextType = _a.type,
+        index = _a.index;
+    throw new TypeError("Unexpected " + nextType + " at " + index + ", expected " + type);
+  };
+
+  var consumeText = function () {
+    var result = "";
+    var value; // tslint:disable-next-line
+
+    while (value = tryConsume("CHAR") || tryConsume("ESCAPED_CHAR")) {
+      result += value;
+    }
+
+    return result;
+  };
+
+  while (i < tokens.length) {
+    var char = tryConsume("CHAR");
+    var name = tryConsume("NAME");
+    var pattern = tryConsume("PATTERN");
+
+    if (name || pattern) {
+      var prefix = char || "";
+
+      if (prefixes.indexOf(prefix) === -1) {
+        path += prefix;
+        prefix = "";
+      }
+
+      if (path) {
+        result.push(path);
+        path = "";
+      }
+
+      result.push({
+        name: name || key++,
+        prefix: prefix,
+        suffix: "",
+        pattern: pattern || defaultPattern,
+        modifier: tryConsume("MODIFIER") || ""
+      });
+      continue;
+    }
+
+    var value = char || tryConsume("ESCAPED_CHAR");
+
+    if (value) {
+      path += value;
+      continue;
+    }
+
+    if (path) {
+      result.push(path);
+      path = "";
+    }
+
+    var open = tryConsume("OPEN");
+
+    if (open) {
+      var prefix = consumeText();
+      var name_1 = tryConsume("NAME") || "";
+      var pattern_1 = tryConsume("PATTERN") || "";
+      var suffix = consumeText();
+      mustConsume("CLOSE");
+      result.push({
+        name: name_1 || (pattern_1 ? key++ : ""),
+        pattern: name_1 && !pattern_1 ? defaultPattern : pattern_1,
+        prefix: prefix,
+        suffix: suffix,
+        modifier: tryConsume("MODIFIER") || ""
+      });
+      continue;
+    }
+
+    mustConsume("END");
+  }
+
+  return result;
+}
+/**
+ * Compile a string to a template function for the path.
+ */
+
+
+function compile(str, options) {
+  return tokensToFunction(parse(str, options), options);
+}
+/**
+ * Expose a method for transforming tokens into the path function.
+ */
+
+
+function tokensToFunction(tokens, options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  var reFlags = flags(options);
+  var _a = options.encode,
+      encode = _a === void 0 ? function (x) {
+    return x;
+  } : _a,
+      _b = options.validate,
+      validate = _b === void 0 ? true : _b; // Compile all the tokens into regexps.
+
+  var matches = tokens.map(function (token) {
+    if (typeof token === "object") {
+      return new RegExp("^(?:" + token.pattern + ")$", reFlags);
+    }
+  });
+  return function (data) {
+    var path = "";
+
+    for (var i = 0; i < tokens.length; i++) {
+      var token = tokens[i];
+
+      if (typeof token === "string") {
+        path += token;
+        continue;
+      }
+
+      var value = data ? data[token.name] : undefined;
+      var optional = token.modifier === "?" || token.modifier === "*";
+      var repeat = token.modifier === "*" || token.modifier === "+";
+
+      if (Array.isArray(value)) {
+        if (!repeat) {
+          throw new TypeError("Expected \"" + token.name + "\" to not repeat, but got an array");
+        }
+
+        if (value.length === 0) {
+          if (optional) continue;
+          throw new TypeError("Expected \"" + token.name + "\" to not be empty");
+        }
+
+        for (var j = 0; j < value.length; j++) {
+          var segment = encode(value[j], token);
+
+          if (validate && !matches[i].test(segment)) {
+            throw new TypeError("Expected all \"" + token.name + "\" to match \"" + token.pattern + "\", but got \"" + segment + "\"");
+          }
+
+          path += token.prefix + segment + token.suffix;
+        }
+
+        continue;
+      }
+
+      if (typeof value === "string" || typeof value === "number") {
+        var segment = encode(String(value), token);
+
+        if (validate && !matches[i].test(segment)) {
+          throw new TypeError("Expected \"" + token.name + "\" to match \"" + token.pattern + "\", but got \"" + segment + "\"");
+        }
+
+        path += token.prefix + segment + token.suffix;
+        continue;
+      }
+
+      if (optional) continue;
+      var typeOfMessage = repeat ? "an array" : "a string";
+      throw new TypeError("Expected \"" + token.name + "\" to be " + typeOfMessage);
+    }
+
+    return path;
+  };
+}
+/**
+ * Create path match function from `path-to-regexp` spec.
+ */
+
+
+function match(str, options) {
+  var keys = [];
+  var re = pathToRegexp(str, keys, options);
+  return regexpToFunction(re, keys, options);
+}
+/**
+ * Create a path match function from `path-to-regexp` output.
+ */
+
+
+function regexpToFunction(re, keys, options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  var _a = options.decode,
+      decode = _a === void 0 ? function (x) {
+    return x;
+  } : _a;
+  return function (pathname) {
+    var m = re.exec(pathname);
+    if (!m) return false;
+    var path = m[0],
+        index = m.index;
+    var params = Object.create(null);
+
+    var _loop_1 = function (i) {
+      // tslint:disable-next-line
+      if (m[i] === undefined) return "continue";
+      var key = keys[i - 1];
+
+      if (key.modifier === "*" || key.modifier === "+") {
+        params[key.name] = m[i].split(key.prefix + key.suffix).map(function (value) {
+          return decode(value, key);
+        });
+      } else {
+        params[key.name] = decode(m[i], key);
+      }
+    };
+
+    for (var i = 1; i < m.length; i++) {
+      _loop_1(i);
+    }
+
+    return {
+      path: path,
+      index: index,
+      params: params
+    };
+  };
+}
+/**
+ * Escape a regular expression string.
+ */
+
+
+function escapeString(str) {
+  return str.replace(/([.+*?=^!:${}()[\]|/\\])/g, "\\$1");
+}
+/**
+ * Get the flags for a regexp from the options.
+ */
+
+
+function flags(options) {
+  return options && options.sensitive ? "" : "i";
+}
+/**
+ * Pull out keys from a regexp.
+ */
+
+
+function regexpToRegexp(path, keys) {
+  if (!keys) return path; // Use a negative lookahead to match only capturing groups.
+
+  var groups = path.source.match(/\((?!\?)/g);
+
+  if (groups) {
+    for (var i = 0; i < groups.length; i++) {
+      keys.push({
+        name: i,
+        prefix: "",
+        suffix: "",
+        modifier: "",
+        pattern: ""
+      });
+    }
+  }
+
+  return path;
+}
+/**
+ * Transform an array into a regexp.
+ */
+
+
+function arrayToRegexp(paths, keys, options) {
+  var parts = paths.map(function (path) {
+    return pathToRegexp(path, keys, options).source;
+  });
+  return new RegExp("(?:" + parts.join("|") + ")", flags(options));
+}
+/**
+ * Create a path regexp from string input.
+ */
+
+
+function stringToRegexp(path, keys, options) {
+  return tokensToRegexp(parse(path, options), keys, options);
+}
+/**
+ * Expose a function for taking tokens and returning a RegExp.
+ */
+
+
+function tokensToRegexp(tokens, keys, options) {
+  if (options === void 0) {
+    options = {};
+  }
+
+  var _a = options.strict,
+      strict = _a === void 0 ? false : _a,
+      _b = options.start,
+      start = _b === void 0 ? true : _b,
+      _c = options.end,
+      end = _c === void 0 ? true : _c,
+      _d = options.encode,
+      encode = _d === void 0 ? function (x) {
+    return x;
+  } : _d;
+  var endsWith = "[" + escapeString(options.endsWith || "") + "]|$";
+  var delimiter = "[" + escapeString(options.delimiter || "/#?") + "]";
+  var route = start ? "^" : ""; // Iterate over the tokens and create our regexp string.
+
+  for (var _i = 0, tokens_1 = tokens; _i < tokens_1.length; _i++) {
+    var token = tokens_1[_i];
+
+    if (typeof token === "string") {
+      route += escapeString(encode(token));
+    } else {
+      var prefix = escapeString(encode(token.prefix));
+      var suffix = escapeString(encode(token.suffix));
+
+      if (token.pattern) {
+        if (keys) keys.push(token);
+
+        if (prefix || suffix) {
+          if (token.modifier === "+" || token.modifier === "*") {
+            var mod = token.modifier === "*" ? "?" : "";
+            route += "(?:" + prefix + "((?:" + token.pattern + ")(?:" + suffix + prefix + "(?:" + token.pattern + "))*)" + suffix + ")" + mod;
+          } else {
+            route += "(?:" + prefix + "(" + token.pattern + ")" + suffix + ")" + token.modifier;
+          }
+        } else {
+          route += "(" + token.pattern + ")" + token.modifier;
+        }
+      } else {
+        route += "(?:" + prefix + suffix + ")" + token.modifier;
+      }
+    }
+  }
+
+  if (end) {
+    if (!strict) route += delimiter + "?";
+    route += !options.endsWith ? "$" : "(?=" + endsWith + ")";
+  } else {
+    var endToken = tokens[tokens.length - 1];
+    var isEndDelimited = typeof endToken === "string" ? delimiter.indexOf(endToken[endToken.length - 1]) > -1 : // tslint:disable-next-line
+    endToken === undefined;
+
+    if (!strict) {
+      route += "(?:" + delimiter + "(?=" + endsWith + "))?";
+    }
+
+    if (!isEndDelimited) {
+      route += "(?=" + delimiter + "|" + endsWith + ")";
+    }
+  }
+
+  return new RegExp(route, flags(options));
+}
+/**
+ * Normalize the given path string, returning a regular expression.
+ *
+ * An empty array can be passed in for the keys, which will hold the
+ * placeholder key descriptions. For example, using `/user/:id`, `keys` will
+ * contain `[{ name: 'id', delimiter: '/', optional: false, repeat: false }]`.
+ */
+
+
+function pathToRegexp(path, keys, options) {
+  if (path instanceof RegExp) return regexpToRegexp(path, keys);
+  if (Array.isArray(path)) return arrayToRegexp(path, keys, options);
+  return stringToRegexp(path, keys, options);
+}
+},{}],"router/index.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.Redirect = exports.Switch = exports.Route = exports.Link = exports.HashRouter = void 0;
 
 var _react = _interopRequireWildcard(require("react"));
 
@@ -31984,7 +32525,7 @@ var HashRouter = function HashRouter(_ref) {
     return function () {
       window.removeEventListener('hashchange', handleHashChange, false);
     };
-  });
+  }, []);
 
   function handleHashChange() {
     setRecord({
@@ -32008,47 +32549,69 @@ exports.HashRouter = HashRouter;
 var Link = function Link(_ref2) {
   var to = _ref2.to,
       children = _ref2.children;
-
-  var _useContext = (0, _react.useContext)(HistoryContext),
-      record = _useContext.record,
-      setRecord = _useContext.setRecord;
-
-  (0, _react.useEffect)(function () {});
-
-  var handleClick = function handleClick(e) {// setRecord([...record, to]);
-  };
-
   return _react.default.createElement("a", {
-    onClick: handleClick
+    href: '#' + to
   }, children);
 };
 
 exports.Link = Link;
 
+var _require = require('path-to-regexp'),
+    pathToRegexp = _require.pathToRegexp;
+
 var Route = function Route(_ref3) {
   var path = _ref3.path,
       children = _ref3.children;
 
-  var _useContext2 = (0, _react.useContext)(HistoryContext),
-      record = _useContext2.record,
-      setRecord = _useContext2.setRecord;
+  // 根据路由是否匹配进行展示,使用正则进行匹配, 默认为不精确匹配
+  var _useContext = (0, _react.useContext)(HistoryContext),
+      record = _useContext.record;
 
-  (0, _react.useEffect)(function () {// console.log(record.location.pathname);
-  }); // 根据路由是否匹配进行展示
-
-  var match = path === record.location.pathname;
+  var regex = pathToRegexp(record.location.pathname, [], {
+    end: false
+  });
+  var match = regex.test(path);
   return match ? children : null;
-};
+}; // 匹配到一个之后不再进行匹配
+
 
 exports.Route = Route;
 
 var Switch = function Switch(_ref4) {
   var children = _ref4.children;
-  return children;
-};
+
+  var _useContext2 = (0, _react.useContext)(HistoryContext),
+      record = _useContext2.record; // debugger;
+
+
+  var pathname = record.location.pathname;
+
+  for (var i = 0; i < children.length; i++) {
+    var child = children[i];
+    var path = child.props.path;
+    var reg = pathToRegexp(pathname, [], {
+      end: false
+    });
+
+    if (reg.test(path)) {
+      return child;
+    }
+  }
+
+  return null;
+}; // 其他条件匹配都失败的时候，自动跳转到指定页面,如login
+
 
 exports.Switch = Switch;
-},{"react":"node_modules/react/index.js"}],"index.js":[function(require,module,exports) {
+
+var Redirect = function Redirect(_ref5) {
+  var to = _ref5.to;
+  window.location.hash = to;
+  return null;
+};
+
+exports.Redirect = Redirect;
+},{"react":"node_modules/react/index.js","path-to-regexp":"node_modules/path-to-regexp/dist.es2015/index.js"}],"index.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -32068,42 +32631,57 @@ function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return 
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || typeof obj !== "object" && typeof obj !== "function") { return { default: obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj.default = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
 
-// import { HashRouter as Router, Switch, Route, Link } from 'react-router-dom';
+// import {
+// 	HashRouter as Router,
+// 	Switch,
+// 	Route,
+// 	Link,
+// 	Redirect
+// } from 'react-router-dom';
 function App() {
   return _react.default.createElement(_router.HashRouter, null, _react.default.createElement("div", null, _react.default.createElement("nav", null, _react.default.createElement("ul", null, _react.default.createElement("li", null, _react.default.createElement(_router.Link, {
     to: "/"
   }, "Home")), _react.default.createElement("li", null, _react.default.createElement(_router.Link, {
     to: "/about"
   }, "About")), _react.default.createElement("li", null, _react.default.createElement(_router.Link, {
-    to: "/users"
-  }, "Users")))), _react.default.createElement(_router.Switch, null, _react.default.createElement(_router.Route, {
+    to: "/outer"
+  }, "Outer")), _react.default.createElement("li", null, _react.default.createElement(_router.Link, {
+    to: "/no-match"
+  }, "no-match")))), _react.default.createElement(_router.Switch, null, _react.default.createElement(_router.Route, {
+    path: "/"
+  }, _react.default.createElement(Home, null)), _react.default.createElement(_router.Route, {
     path: "/about"
   }, _react.default.createElement(About, null)), _react.default.createElement(_router.Route, {
-    path: "/users"
-  }, _react.default.createElement(Users, null)), _react.default.createElement(_router.Route, {
-    path: "/"
-  }, _react.default.createElement(Home, null)))));
+    path: "/outer"
+  }, _react.default.createElement(Outer, null, _react.default.createElement(Inner, null))), _react.default.createElement(_router.Route, {
+    path: "/login"
+  }, _react.default.createElement(Login, null)), _react.default.createElement(_router.Redirect, {
+    to: "/login"
+  }, " "))));
+}
+
+function Login() {
+  return _react.default.createElement("h2", null, "Login");
 }
 
 function Home() {
-  // useEffect(() => {
-  // 	console.log(location);
-  // });
   return _react.default.createElement("h2", null, "Home");
 }
 
 function About() {
-  // useEffect(() => {
-  // 	console.log(location);
-  // });
   return _react.default.createElement("h2", null, "About");
+} // 嵌套路由
+
+
+function Outer(_ref) {
+  var children = _ref.children;
+  return _react.default.createElement(_react.default.Fragment, null, _react.default.createElement("h2", null, "Outer"), children);
 }
 
-function Users() {
-  // useEffect(() => {
-  // 	console.log(location);
-  // });
-  return _react.default.createElement("h2", null, "Users");
+function Inner() {
+  return _react.default.createElement(_router.Route, {
+    path: "/outer/inner"
+  }, _react.default.createElement("h3", null, "Inner"));
 }
 
 var container = document.querySelector('#root');
@@ -32137,7 +32715,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52930" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53257" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
